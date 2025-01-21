@@ -1,12 +1,13 @@
 const db = require('../models')
-const { User, Post, Like, comment } = db
+const { User, Post, Like, Comment } = db
 
 const { getUserInfoId } = require('../utils/userValidation')
 const postController = {
+  // Post constructor
   getPosts: async (req, res, next) => {
     try {
       const posts = await Post.findAll({
-        include: [User, Like, comment],
+        include: [User, Like, Comment],
         order: [['createdAt', 'DESC']]
       })
       const likes = getUserInfoId(req, 'LikedPosts')
@@ -41,7 +42,7 @@ const postController = {
   getPost: async (req, res, next) => {
     try {
       const post = await Post.findByPk(req.params.id, {
-        include: [User, Like, comment]
+        include: [User, Like, Comment]
       })
 
       if (!post) {
@@ -126,7 +127,7 @@ const postController = {
       // Delete likes and comments associated with the post
       await Promise.all([
         Like.destroy({ where: { postId: post.id } }),
-        comment.destroy({ where: { postId: post.id } })
+        Comment.destroy({ where: { postId: post.id } })
       ])
       await post.destroy()
       return res.json({
@@ -173,6 +174,150 @@ const postController = {
         status: 'success',
         message: 'Post updated',
         post
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+  // Like and Unlike
+  likePost: async (req, res, next) => {
+    try {
+      const post = await Post.findByPk(req.params.id)
+      if (!post) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Post not found'
+        })
+      }
+      const like = await Like.findOne({
+        where: {
+          postId: post.id,
+          UserId: req.user.id
+        }
+      })
+      if (like) {
+        await like.destroy()
+        return res.json({
+          status: 'success',
+          message: 'Unlike post'
+        })
+      }
+      await Like.create({
+        postId: post.id,
+        UserId: req.user.id
+      })
+      return res.json({
+        status: 'success',
+        message: 'Like post'
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+  // Comment constructor
+  addComment: async (req, res, next) => {
+    try {
+      const { content } = req.body
+      const post = await Post.findByPk(req.params.id)
+
+      if (!post) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Post not found'
+        })
+      }
+      const author = await User.findByPk(req.user.id)
+
+      if (!content.trim()) {
+        return res.status(422).json({
+          status: 'error',
+          message: 'input should not be blank'
+        })
+      }
+      const text = await Comment.create({
+        content,
+        postId: post.id,
+        UserId: req.user.id
+      })
+      return res.json({
+        status: 'success',
+        message: `Comment added to ${author.account}'s post`,
+        text
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+  getComments: async (req, res, next) => {
+    try {
+      const post = await Post.findByPk(req.params.id, {
+        include: [Comment]
+      })
+      if (!post) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Post not found'
+        })
+      }
+      return res.json({
+        status: 'success',
+        comments: post.comments
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+  editComment: async (req, res, next) => {
+    try {
+      const { content } = req.body
+      const text = await Comment.findByPk(req.params.commentId)
+      if (!text) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Comment not found'
+        })
+      }
+      if (Comment.UserId !== req.user.id) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Permission denied'
+        })
+      }
+      if (!content.trim()) {
+        return res.status(422).json({
+          status: 'error',
+          message: 'input should not be blank'
+        })
+      }
+      await Comment.update({ content })
+      return res.json({
+        status: 'success',
+        message: 'Comment updated',
+        content
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+  deleteComment: async (req, res, next) => {
+    try {
+      const text = await Comment.findByPk(req.params.commentId)
+      if (!text) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Comment not found'
+        })
+      }
+      if (text.UserId !== req.user.id) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Permission denied'
+        })
+      }
+      await Comment.destroy()
+      return res.json({
+        status: 'success',
+        message: 'Comment deleted'
       })
     } catch (error) {
       next(error)
