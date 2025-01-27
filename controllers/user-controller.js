@@ -1,40 +1,51 @@
 const bcrypt = require('bcryptjs')
 const db = require('../models')
 const jwt = require('jsonwebtoken')
+const validator = require('validator')
+
+const DEFAULT_PROFILE_PIC = require('../image/profilePic.png')
+const DEFAULT_COVER = require('../image/cover.png')
 
 const { User, Post } = db
-const { getUserInfoId } = require('../utils/userValidation')
+const { checkUserInfo, getUserInfoId } = require('../utils/userValidation')
 
 const userController = {
   registerUser: async (req, res, next) => {
     try {
-      const { email, password } = req.body
+      const validator = await checkUserInfo(req)
 
-      // Validate input fields
-      if (!email || !password) {
+      if (!validator) {
+        await User.create({
+          account: req.body.account,
+          name: req.body.name,
+          email: req.body.email,
+          password: bcrypt.hashSync(
+            req.body.password,
+            bcrypt.genSaltSync(10),
+            null
+          ),
+          role: 'user',
+          profilePic: DEFAULT_PROFILE_PIC,
+          cover: DEFAULT_COVER
+        })
+
+        return res.status(200).json({
+          status: 'success',
+          message: `${req.body.account} register successfully! Please login.`
+        })
+      }
+      // All the required fields should be filled out correctly
+      if (validator.errors) {
         return res.status(400).json({
           status: 'error',
-          message: 'Email and password are required'
+          errors: validator.errors,
+          userInput: req.body
         })
       }
 
-      // Check if user already exists
-      const existingUser = await User.findOne({ where: { email } })
-      if (existingUser) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'User already exists'
-        })
-      }
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10)
-
-      // Create user
-      await User.create({ email, password: hashedPassword })
-      return res.status(201).json({
-        status: 'success',
-        message: 'User created successfully'
+      return res.status(400).json({
+        status: 'error',
+        message: 'A user already exists. Choose a different account or email.'
       })
     } catch (error) {
       // Pass to error handler middleware
@@ -77,13 +88,13 @@ const userController = {
       return res.status(200).json({
         status: 'success',
         message: 'User logged in successfully',
-        token: token,
+        token,
         user: {
           id: user.id,
           name: user.name,
           email: user.email,
           account: user.account,
-          avatar: user.avatar,
+          profilePic: user.profilePic,
           introduction: user.introduction,
           cover: user.cover,
           role: user.role
@@ -134,6 +145,117 @@ const userController = {
     } catch (error) {
       next(error)
     }
+  },
+  editUser: async (req, res, next) => {
+    const userId = req.user.id
+    const id = req.params.id
+    const { name, introduction, page } = req.body
+
+    // Users can only edit their own profile
+    if (userId !== Number(id)) {
+      return res
+        .status(403)
+        .json({ status: 'error', message: "You can not edit other's profile" })
+    }
+
+    // Find user
+    const user = await User.findByPk(userId)
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      })
+    }
+    try {
+      // Update settings
+      if (page === 'settings') {
+        const validationResult = await checkUserInfo(req)
+
+        if (!validationResult) {
+          await user.update({
+            account: req.body.account,
+            name: req.body.name,
+            email: req.body.email,
+            password: bcrypt.hashSync(
+              req.body.password,
+              bcrypt.genSaltSync(10),
+              null
+            )
+          })
+
+          return res.status(200).json({
+            status: 'success',
+            message: 'settings have been successfully updated.'
+          })
+        }
+        // All the required fields should be filled out correctly
+        if (validationResult.errors) {
+          return res.status(422).json({
+            status: 'error',
+            errors: validationResult.errors,
+            userInput: req.body
+          })
+        }
+        return res.status(400).json({
+          status: 'error',
+          message: 'A user already exists. Choose a different account or email.'
+        })
+      }
+
+      // Update profile
+      const errors = []
+      const { file } = req
+      const acceptedType = ['.png', '.jpg', '.jpeg']
+
+      if (name && !validator.isByteLength(name, { min: 1, max: 50 })) {
+        errors.push({ message: 'Name can not be longer than 50 characters.' })
+      }
+
+      if (introduction && !validator.isByteLength(introduction, { min: 0, max: 160 })) {
+        errors.push({ message: 'Introduction can not be longer than 160 characters.' })
+      }
+
+      if (file) {
+        if (file.profilePic) {
+          const fileType = file.profilePic[0].originalname.substring(file.profilePic[0].originalname.lastIndexOf('.')).toLowerCase()
+          if (!acceptedType.includes(fileType)) {
+            errors.push({
+              message: 'Profile picture type is not accepted. Please upload an image ending with png, jpg, or jpeg.'
+            })
+          }
+        }
+        if (file.cover) {
+          const fileType = file.cover[0].originalname.substring(file.cover[0].originalname.lastIndexOf('.')).toLowerCase()
+          if (!acceptedType.includes(fileType)) {
+            errors.push({
+              message: 'Cover type is not accepted. Please upload an image ending with png, jpg, or jpeg.'
+            })
+          }
+        }
+      }
+
+      if (errors.length > 0) {
+        return res.status(400).json({
+          status: 'error',
+          errors,
+          userInput: req.body
+        })
+      }
+
+      await user.update({
+        name,
+        introduction,
+        profilePic: file && file.profilePic ? `/uploads/${file.profilePic[0].filename}` : user.profilePic,
+        cover: file ? `/uploads/${file.cover[0].filename}` : user.cover
+      })
+      return res.status(200).json({
+        status: 'success',
+        message: 'User profile has been successfully updated.'
+      })
+    } catch (error) {
+      next(error)
+    }
   }
 }
+
 module.exports = userController
