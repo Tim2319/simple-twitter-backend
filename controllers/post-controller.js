@@ -1,5 +1,7 @@
 const db = require('../models')
 const { User, Post, Like, Comment } = db
+const fs = require('fs')
+const path = require('path')
 
 const { getUserInfoId } = require('../utils/userValidation')
 const postController = {
@@ -78,7 +80,8 @@ const postController = {
   },
   createPost: async (req, res, next) => {
     try {
-      const { content, media } = req.body
+      const { content } = req.body
+      const { file } = req
 
       // Check if the content is not empty and has not exceeded the character limit
       if (!content.trim()) {
@@ -95,9 +98,11 @@ const postController = {
         })
       }
 
+      const media = file ? file.map(file => `/uploads/${file.filename}`) : []
+
       const post = await Post.create({
         content,
-        media,
+        media: JSON.stringify(media),
         UserId: req.user.id
       })
       return res.status(200).json({
@@ -124,6 +129,19 @@ const postController = {
           message: 'Permission denied'
         })
       }
+      // Delete the media from the database
+      if (post.media) {
+        const mediaPath = JSON.parse(post.media)
+        mediaPath.forEach(mediaPath => {
+          const fullPath = path.join(__dirname, '..', 'public', 'uploads', mediaPath)
+          fs.unlink(fullPath, err => {
+            if (err) {
+              console.error('Failed to delete media file:', err)
+            }
+          })
+        })
+      }
+
       // Delete likes and comments associated with the post
       await Promise.all([
         Like.destroy({ where: { postId: post.id } }),
@@ -140,7 +158,8 @@ const postController = {
   },
   editPost: async (req, res, next) => {
     try {
-      const { content, media } = req.body
+      const { content } = req.body
+      const { file } = req
       const post = await Post.findByPk(req.params.id)
       if (!post) {
         return res.status(404).json({
@@ -166,9 +185,23 @@ const postController = {
           message: 'input cannot be longer than 140 characters'
         })
       }
+      // Delete the old media file if a new file is uploaded
+      if (file && post.media) {
+        const oldMediaPath = JSON.parse(post.media)
+        oldMediaPath.forEach(oldMediaPath => {
+          const fullPath = path.join(__dirname, '..', 'public', 'uploads', oldMediaPath)
+          fs.unlink(fullPath, err => {
+            if (err) {
+              console.error('Failed to delete old media file:', err)
+            }
+          })
+        })
+      }
+      const media = file ? file.map(file => `/uploads/${file.filename}`) : JSON.parse(post.media)
+
       await post.update({
         content: content.trim(),
-        media: media || post.media // If media is provided, update it; otherwise, keep the original media file
+        media: JSON.stringify(media)
       })
       return res.json({
         status: 'success',
