@@ -1,9 +1,19 @@
 const express = require('express')
+const path = require('path')
+const fs = require('fs')
 const cors = require('cors')
 const app = express()
 const routes = require('routes')
 require('dotenv').config()
 const PORT = process.env.PORT || 3306
+
+// Create upload directory if not exists
+const uploadDir = path.join(__dirname, 'public', 'uploads')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true })
+}
+
+app.use('/uploads', express.static(uploadDir))
 
 const corsOptions = {
   origin: '*',
