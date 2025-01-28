@@ -81,7 +81,7 @@ const postController = {
   createPost: async (req, res, next) => {
     try {
       const { content } = req.body
-      const { file } = req
+      const { files } = req
 
       // Check if the content is not empty and has not exceeded the character limit
       if (!content.trim()) {
@@ -98,7 +98,7 @@ const postController = {
         })
       }
 
-      const media = file ? file.map(file => `/uploads/${file.filename}`) : []
+      const media = files ? files.map(files => `/uploads/${files.filename}`) : []
 
       const post = await Post.create({
         content,
@@ -136,7 +136,7 @@ const postController = {
           const fullPath = path.join(__dirname, '..', 'public', 'uploads', mediaPath)
           fs.unlink(fullPath, err => {
             if (err) {
-              console.error('Failed to delete media file:', err)
+              console.error('Failed to delete media files:', err)
             }
           })
         })
@@ -159,7 +159,7 @@ const postController = {
   editPost: async (req, res, next) => {
     try {
       const { content } = req.body
-      const { file } = req
+      const { files } = req
       const post = await Post.findByPk(req.params.id)
       if (!post) {
         return res.status(404).json({
@@ -185,19 +185,19 @@ const postController = {
           message: 'input cannot be longer than 140 characters'
         })
       }
-      // Delete the old media file if a new file is uploaded
-      if (file && post.media) {
+      // Delete the old media files if a new files is uploaded
+      if (files && post.media) {
         const oldMediaPath = JSON.parse(post.media)
         oldMediaPath.forEach(oldMediaPath => {
           const fullPath = path.join(__dirname, '..', 'public', 'uploads', oldMediaPath)
           fs.unlink(fullPath, err => {
             if (err) {
-              console.error('Failed to delete old media file:', err)
+              console.error('Failed to delete old media files:', err)
             }
           })
         })
       }
-      const media = file ? file.map(file => `/uploads/${file.filename}`) : JSON.parse(post.media)
+      const media = files ? files.map(files => `/uploads/${files.filename}`) : JSON.parse(post.media)
 
       await post.update({
         content: content.trim(),
@@ -251,6 +251,7 @@ const postController = {
   addComment: async (req, res, next) => {
     try {
       const { content } = req.body
+      const { files } = req
       const post = await Post.findByPk(req.params.id)
 
       if (!post) {
@@ -267,8 +268,11 @@ const postController = {
           message: 'input should not be blank'
         })
       }
+      const media = files ? files.map(files => `/uploads/${files.filename}`) : []
+
       const text = await Comment.create({
         content,
+        media: JSON.stringify(media),
         postId: post.id,
         UserId: req.user.id
       })
@@ -303,6 +307,7 @@ const postController = {
   editComment: async (req, res, next) => {
     try {
       const { content } = req.body
+      const { files } = req
       const text = await Comment.findByPk(req.params.commentId)
       if (!text) {
         return res.status(404).json({
@@ -322,7 +327,25 @@ const postController = {
           message: 'input should not be blank'
         })
       }
-      await Comment.update({ content })
+
+      // Delete the old media files if a new files is uploaded
+      if (files && Comment.media) {
+        const oldMediaPath = JSON.parse(Comment.media)
+        oldMediaPath.forEach(oldMediaPath => {
+          const fullPath = path.join(__dirname, '..', 'public', 'uploads', oldMediaPath)
+          fs.unlink(fullPath, err => {
+            if (err) {
+              console.error('Failed to delete old media files:', err)
+            }
+          })
+        })
+      }
+      const media = files ? files.map(files => `/uploads/${files.filename}`) : JSON.parse(Comment.media)
+
+      await Comment.update({
+        content: content.trim(),
+        media: JSON.stringify(media)
+      })
       return res.json({
         status: 'success',
         message: 'Comment updated',
@@ -347,6 +370,19 @@ const postController = {
           message: 'Permission denied'
         })
       }
+      // Delete the media from the database
+      if (Comment.media) {
+        const mediaPath = JSON.parse(Comment.media)
+        mediaPath.forEach(mediaPath => {
+          const fullPath = path.join(__dirname, '..', 'public', 'uploads', mediaPath)
+          fs.unlink(fullPath, err => {
+            if (err) {
+              console.error('Failed to delete media files:', err)
+            }
+          })
+        })
+      }
+
       await Comment.destroy()
       return res.json({
         status: 'success',

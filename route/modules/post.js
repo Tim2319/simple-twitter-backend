@@ -12,9 +12,9 @@ router.delete('/deletePost/:id', postController.deletePost)
 // like constructor
 router.post('/likePost/:id', postController.likePost)
 // Comment constructor
-router.post('/createComment', postController.createComment)
+router.post('/createComment', upload.array('media', 4), postController.createComment)
 router.get('/createComment/:id', postController.getComments)
-router.put('/updateComment/:id', postController.updateComment)
+router.put('/updateComment/:id', upload.array('media', 4), postController.updateComment)
 router.delete('/deleteComment/:id', postController.deleteComment)
 
 module.exports = router
