@@ -32,6 +32,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     content: {
       type: DataTypes.TEXT
+    },
+    media: {
+      type: DataTypes.TEXT
     }
   }, {
     sequelize,
