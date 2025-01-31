@@ -20,6 +20,11 @@ router.put('getUser/:id',
   ]),
   userController.editUserUser
 )
+router.get('Post/:id', userController.getPosts)
+router.get('likes/:id', userController.getLikes)
+router.get('commented_post/:id', userController.getCommentsAndPosts)
+router.get('followers/:id', userController.getFollowers)
+router.get('followings/:id', userController.getFollowings)
 
 router.post('/followships/:id', followshipController.followUser)
 router.delete('/unfollowships/:id', followshipController.unfollowUser)
