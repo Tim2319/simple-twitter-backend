@@ -57,6 +57,51 @@ async function checkUserInfo (req) {
   return false
   // }
 }
+function getFollowshipInfo (user, followships, currentUserFollowings) {
+  const idName = followships === 'Followers' ? 'followerId' : 'followingId'
+
+  return user.dataValues[followships].map(followship => {
+    if (!followship.role === 'admin') {
+      return null
+    }
+    return {
+      [idName]: followship.id,
+      name: followship.name,
+      account: followship.account,
+      profilePic: followship.profilePic,
+      isFollowed: currentUserFollowings.includes(followship.id)
+    }
+  })
+}
+
+function getResourceInfo (user, resource, likes) {
+  return user.dataValues[resource].map(el => {
+    const post = el.Post
+    if (!post) {
+      return null
+    }
+    return {
+      id: el.id,
+      comment: el.comment,
+      createdAt: el.createdAt,
+      postId: el.postId,
+      post: {
+        id: post.id,
+        description: post.description,
+        createdAt: post.createdAt,
+        isLiked: likes.includes(post.id),
+        User: {
+          id: post.User.id,
+          account: post.User.account,
+          name: post.User.name,
+          profilePic: post.User.profilePic
+        },
+        commentsCount: post.Comments.length,
+        likesCount: post.Likes.length
+      }
+    }
+  })
+}
 
 function getUserInfoId (req, info) {
   if (req.user[info]) return req.user[info].map(el => el.id)
@@ -64,6 +109,8 @@ function getUserInfoId (req, info) {
 }
 
 module.exports = {
+  getFollowshipInfo,
+  getResourceInfo,
   checkUserInfo,
   getUserInfoId
 }
