@@ -2,12 +2,13 @@ const bcrypt = require('bcryptjs')
 const db = require('../models')
 const jwt = require('jsonwebtoken')
 const validator = require('validator')
+const sequelize = require('sequelize')
 
 const DEFAULT_PROFILE_PIC = require('../image/profilePic.png')
 const DEFAULT_COVER = require('../image/cover.png')
 
-const { User, Post } = db
-const { checkUserInfo, getUserInfoId } = require('../utils/userValidation')
+const { User, Post, Comment, Like } = db
+const { checkUserInfo, getUserInfoId, getResourceInfo } = require('../utils/userValidation')
 
 const userController = {
   registerUser: async (req, res, next) => {
@@ -255,6 +256,144 @@ const userController = {
     } catch (error) {
       next(error)
     }
+  },
+  getPosts: async (req, res, next) => {
+    try {
+      const user = await User.findByPk(req.params.id, {
+        include: [{
+          model: Post,
+          include: [Comment, Like]
+        }],
+        order: [[sequelize.literal('`Post`. `createdAt`'), 'DESC']]
+      })
+
+      if (!user || user.role === 'admin') {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        })
+      }
+
+      // Clean up Post data
+      const likes = getUserInfoId(req, 'LikedPosts')
+      const posts = user.dataValues.Posts.map(post => ({
+        id: post.id,
+        content: post.content,
+        createdAt: post.createdAt,
+        likesCount: post.Likes.length,
+        commentsCount: post.Comments.length,
+        isLiked: likes.includes(post.id)
+      }))
+      res.status(200).json(posts)
+    } catch (error) {
+      next(error)
+    }
+  },
+  getCommentsAndPosts: async (req, res, next) => {
+    try {
+      const user = await User.findByPk(req.params.id, {
+        include: [
+          {
+            model: Comment,
+            include: [{ model: Post, include: [Like, Comment, User] }]
+          }],
+        order: [[sequelize.literal('`Comment`. `createdAt`'), 'DESC']]
+      })
+
+      if (!user || user.role === 'admin') {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        })
+      }
+
+      // Clean up data
+      const likes = getUserInfoId(req, 'LikedPosts')
+      const comments = getResourceInfo(user, 'Comments', likes)
+
+      return res.status(200).json(comments)
+    } catch (error) {
+      next(error)
+    }
+  },
+  getLikes: async (req, res, next) => {
+    try {
+      const user = await User.findByPk(req.params.id, {
+        include: [{ model: Like, include: [User, Post] }]
+      })
+
+      if (!user || user.role === 'admin') {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        })
+      }
+      // Clean up data
+      const currentUserLikes = getUserInfoId(req, 'LikedPosts')
+      const likes = getResourceInfo(user, 'Likes', currentUserLikes)
+
+      return res.status(200).json(likes)
+    } catch (error) {
+      next(error)
+    }
+  },
+  getFollowers: async (req, res, next) => {
+    try {
+      const user = await User.findByPk(req.params.id, {
+        include: [{ model: User, as: 'Followers' }],
+        order: [[sequelize.literal('`Followers->Followship`. `createdAt`'), 'DESC']]
+      })
+
+      if (!user || user.role === 'admin') {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        })
+      }
+
+      // Clean up followers data
+      const currentUserFollowings = getUserInfoId(req, 'Followers')
+      const followers = getResourceInfo(user, 'Followers', currentUserFollowings)
+
+      return res.status(200).json(followers)
+    } catch (error) {
+      next(error)
+    }
+  },
+  getFollowings: async (req, res, next) => {
+    try {
+      const user = await User.findByPk(req.params.id, {
+        include: [{ model: User, as: 'Followings' }],
+        order: [[sequelize.literal('`Followings->Followship`. `createdAt`'), 'DESC']]
+      })
+
+      if (!user || user.role === 'admin') {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        })
+      }
+
+      // Clean up followings data
+      const currentUserFollowings = getUserInfoId(req, 'Followings')
+      const followings = getResourceInfo(user, 'Followings', currentUserFollowings)
+
+      return res.status(200).json(followings)
+    } catch (error) {
+      next(error)
+    }
+  },
+  getCurrentUser: async (req, res) => {
+    return res.status(200).json({
+      id: req.user.id,
+      name: req.user.name,
+      email: req.user.email,
+      account: req.user.account,
+      profilePic: req.user.profilePic,
+      introduction: req.user.introduction,
+      cover: req.user.cover,
+      role: req.user.role
+    })
   }
 }
 
