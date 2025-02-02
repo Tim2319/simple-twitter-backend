@@ -147,6 +147,46 @@ const userController = {
       next(error)
     }
   },
+  getTopUsers: async (req, res, next) => {
+    try {
+      let users = await User.findAll({
+        where: { role: 'user' },
+        attributes: [
+          'id',
+          'name',
+          'account',
+          'profilePic',
+          [
+            sequelize.fn('count', sequelize.col('Followers.id')),
+            'followersCount'
+          ]
+        ],
+
+        include: [
+          { model: User, as: 'Followers', attributes: [] }
+        ],
+        group: ['User.id'],
+        order: [[sequelize.literal('followerCount'), 'DESC']],
+        limit: 10
+      })
+
+      const followings = getUserInfoId(req, 'Followings') || []
+
+      users = users.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        account: user.account,
+        profilePic: user.profilePic,
+        followerCount: user.dataValues.followerCount,
+        isFollowed: followings.includes(user.id)
+      }))
+
+      res.status(200).json(users)
+    } catch (error) {
+      next(error)
+    }
+  },
   editUser: async (req, res, next) => {
     const userId = req.user.id
     const id = req.params.id
