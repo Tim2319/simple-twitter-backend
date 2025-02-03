@@ -8,6 +8,9 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.Post, { foreignKey: 'userId' })
       User.hasMany(models.Like, { foreignKey: 'userId' })
       User.hasMany(models.Comment, { foreignKey: 'userId' })
+      User.hasMany(models.Notification, { foreignKey: 'userId' })
+      User.hasMany(models.JoinRoom, { foreignKey: 'userId' })
+      User.hasMany(models.Message, { foreignKey: 'userId' })
       User.belongsToMany(models.Post, {
         through: models.Like,
         foreignKey: 'UserId',
@@ -27,6 +30,11 @@ module.exports = (sequelize, DataTypes) => {
         through: models.Followship,
         foreignKey: 'followerId',
         as: 'Followings'
+      })
+      User.belongsToMany(models.ChatRoom, {
+        through: models.JoinRoom,
+        foreignKey: 'userId',
+        as: 'JoinedRooms'
       })
     }
   }
