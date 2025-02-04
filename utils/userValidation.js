@@ -1,7 +1,95 @@
 const db = require('../models')
-const { User } = db
+const { User, JoinRoom, Notification } = db
 const { Op } = require('sequelize')
 const validator = require('validator')
+
+const PUBLIC_ROOM_ID = Number(process.env.PUBLIC_ROOM_ID)
+const interactionTypes = {
+  post: 1,
+  follow: 2,
+  comment: 3,
+  like: 4
+}
+const users = []
+
+const getCurrentUser = async socket => {
+  console.log('getCurrentUser function')
+  if (!socket.userId) return
+
+  const user = await User.findByPk(socket.userId, {
+    raw: true,
+    nest: true,
+    attributes: ['id', 'name', 'account', 'profilePic', 'cover', 'role']
+  })
+
+  if (!user) return
+
+  socket.user = { ...user, socketId: socket.id }
+}
+
+const getUserInRoom = async roomId => {
+  console.log('getUserInRoom function')
+  console.log('roomId', roomId)
+
+  const usersId = new Set()
+  users.forEach(user => {
+    if (!usersId.has(user.userId) && user.roomId === roomId) {
+      usersId.add(user.userId)
+    }
+  })
+
+  console.log('usersId', usersId)
+
+  const usersInRoom = await User.findAll({
+    where: {
+      id: [...usersId]
+    },
+    raw: true,
+    nest: true,
+    attributes: ['id', 'name', 'account', 'profilePic']
+  })
+  console.log('usersInRoom', usersInRoom)
+
+  return usersInRoom
+}
+
+const addUser = async ({ socketId, roomId, userId, username }) => {
+  console.log('addUser function')
+  console.log('socketId', socketId)
+  console.log('roomId', roomId)
+  console.log('userId', userId)
+  console.log('username', username)
+
+  const user = { socketId, roomId, userId, username }
+  users.push(user)
+  console.log('users', users)
+
+  if (Number(roomId) === PUBLIC_ROOM_ID) {
+    console.log(`User ${username} joined the public room`)
+
+    await JoinRoom.findOrCreate({
+      where: { UserId: userId, ChatRoomId: roomId }
+    })
+  }
+  return user
+}
+
+const removeUser = async socket => {
+  console.log('removeUser function')
+  console.log('socket.id', socket.id)
+
+  const index = users.findIndex(
+    user => user.socketId === socket.id && user.roomId === PUBLIC_ROOM_ID)
+
+  console.log('index', index)
+
+  if (index === -1) return null
+
+  const user = users.splice(index, 1)[0]
+  console.log('users', users)
+
+  return user
+}
 
 async function checkUserInfo (req) {
   const errors = []
@@ -109,6 +197,10 @@ function getUserInfoId (req, info) {
 }
 
 module.exports = {
+  getCurrentUser,
+  getUserInRoom,
+  addUser,
+  removeUser,
   getFollowshipInfo,
   getResourceInfo,
   checkUserInfo,
