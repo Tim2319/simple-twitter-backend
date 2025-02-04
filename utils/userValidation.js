@@ -112,6 +112,42 @@ const updateTime = async (userId, ChatRoomId) => {
   console.log(`updateTime time for user ${userId} in room ${ChatRoomId}`)
 }
 
+const createNotification = async data => {
+  console.log('createNotification function')
+  console.log('data', data)
+
+  const notificationData = {
+    UserId: data.id,
+    receiverId: data.receiverId,
+    PostId: data.postId ?? null,
+    commentId: data.commentId ?? null,
+    type: data.type
+  }
+
+  if (
+    data.type === interactionTypes.post ||
+    data.type === interactionTypes.comment
+  ) {
+    return await Notification.findOrCreate({
+      where: notificationData,
+      defaults: notificationData
+    })
+  }
+
+  const [notification, created] = await Notification.findOrCreate({
+    where: notificationData,
+    defaults: notificationData
+  })
+
+  if (!created) {
+    console.log('checkData', notification.toJSON())
+    notification.changed('updatedAt', true)
+    return await notification.save()
+  }
+
+  return notification
+}
+
 async function checkUserInfo (req) {
   const errors = []
   const { account, name, email, password, checkPassword } = req.body
@@ -224,6 +260,7 @@ module.exports = {
   removeUser,
   getOtherUser,
   updateTime,
+  createNotification,
   getFollowshipInfo,
   getResourceInfo,
   checkUserInfo,
