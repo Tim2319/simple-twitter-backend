@@ -91,6 +91,27 @@ const removeUser = async socket => {
   return user
 }
 
+const getOtherUser = async (userId, roomId) => {
+  console.log('getOtherUser function')
+  console.log('userId', userId)
+  console.log('roomId', roomId)
+
+  const user = await JoinRoom.findAll({
+    where: { userId: { [Op.ne]: userId }, chatRoomId: roomId }
+  })
+  return user.userId
+}
+
+const updateTime = async (userId, ChatRoomId) => {
+  console.log('updateTime function')
+  console.log('userId', userId)
+  console.log('ChatRoomId', ChatRoomId)
+
+  await JoinRoom.update({}, { where: { userId, ChatRoomId } })
+
+  console.log(`updateTime time for user ${userId} in room ${ChatRoomId}`)
+}
+
 async function checkUserInfo (req) {
   const errors = []
   const { account, name, email, password, checkPassword } = req.body
@@ -201,6 +222,8 @@ module.exports = {
   getUserInRoom,
   addUser,
   removeUser,
+  getOtherUser,
+  updateTime,
   getFollowshipInfo,
   getResourceInfo,
   checkUserInfo,
