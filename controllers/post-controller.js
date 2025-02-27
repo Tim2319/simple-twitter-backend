@@ -131,15 +131,21 @@ const postController = {
       }
       // Delete the media from the database
       if (post.media) {
-        const mediaPath = JSON.parse(post.media)
-        mediaPath.forEach(mediaPath => {
-          const fullPath = path.join(__dirname, '..', 'public', 'uploads', mediaPath)
-          fs.unlink(fullPath, err => {
-            if (err) {
-              console.error('Failed to delete media files:', err)
-            }
-          })
-        })
+        try {
+          const mediaPaths = JSON.parse(post.media) || []
+          if (Array.isArray(mediaPaths)) {
+            mediaPaths.forEach(mediaPath => {
+              const fullPath = path.join(__dirname, '..', 'public', 'uploads', mediaPath)
+              fs.unlink(fullPath, err => {
+                if (err) {
+                  console.error('Failed to delete media file:', err)
+                }
+              })
+            })
+          }
+        } catch (parseError) {
+          console.error('Error parsing media JSON:', parseError)
+        }
       }
 
       // Delete likes and comments associated with the post
@@ -328,24 +334,29 @@ const postController = {
         })
       }
 
+      console.log('🔍 Uploaded files:', req.files)
+
+      const oldMediaPath = comment.media ? JSON.parse(comment.media) : []
       // Delete the old media files if a new files is uploaded
-      if (files && Comment.media) {
-        const oldMediaPath = JSON.parse(Comment.media)
-        oldMediaPath.forEach(oldMediaPath => {
-          const fullPath = path.join(__dirname, '..', 'public', 'uploads', oldMediaPath)
+      if (files?.length) {
+        oldMediaPath.forEach(files => {
+          const fullPath = path.join(__dirname, '..', 'public', 'uploads', files)
           fs.unlink(fullPath, err => {
-            if (err) {
-              console.error('Failed to delete old media files:', err)
+            if (err && err.code !== 'ENOENT') {
+              console.error('Failed to delete old media files:', fullPath, err)
             }
           })
         })
       }
-      const media = files ? files.map(files => `/uploads/${files.filename}`) : JSON.parse(Comment.media)
+
+      const media = files?.length ? files.map(files => `/uploads/${files.filename}`) : oldMediaPath
 
       await Comment.update({
         content: content.trim(),
         media: JSON.stringify(media)
-      })
+      },
+      { where: { id: comment.id } }
+      )
       return res.json({
         status: 'success',
         message: 'Comment updated',
@@ -357,33 +368,35 @@ const postController = {
   },
   deleteComment: async (req, res, next) => {
     try {
-      const text = await Comment.findByPk(req.params.commentId)
-      if (!text) {
+      const commentId = req.params.comment_id
+      const comment = await Comment.findByPk(commentId)
+
+      if (!comment) {
         return res.status(404).json({
           status: 'error',
           message: 'Comment not found'
         })
       }
-      if (text.UserId !== req.user.id) {
+      if (comment.userId !== req.user.id) {
         return res.status(403).json({
           status: 'error',
           message: 'Permission denied'
         })
       }
       // Delete the media from the database
-      if (Comment.media) {
-        const mediaPath = JSON.parse(Comment.media)
+      if (comment.media) {
+        const mediaPath = JSON.parse(comment.media) || []
         mediaPath.forEach(mediaPath => {
           const fullPath = path.join(__dirname, '..', 'public', 'uploads', mediaPath)
           fs.unlink(fullPath, err => {
             if (err) {
-              console.error('Failed to delete media files:', err)
+              console.error('Failed to delete media files:', fullPath, err)
             }
           })
         })
       }
 
-      await Comment.destroy()
+      await Comment.destroy({ where: { id: comment.id } })
       return res.json({
         status: 'success',
         message: 'Comment deleted'
