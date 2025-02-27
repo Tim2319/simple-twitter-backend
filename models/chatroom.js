@@ -10,7 +10,10 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate (models) {
-      ChatRoom.hasMany(models.JoinRoom)
+      ChatRoom.hasMany(models.JoinRoom, {
+        foreignKey: 'ChatRoomId',
+        as: 'chatRoom'
+      })
       ChatRoom.hasMany(models.Message)
     }
   }

@@ -11,13 +11,24 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate (models) {
       JoinRoom.belongsTo(models.User)
-      JoinRoom.belongsTo(models.ChatRoom)
+      JoinRoom.belongsTo(models.ChatRoom, {
+        foreignKey: 'ChatRoomId',
+        as: 'chatRoom'
+      })
     }
   }
   JoinRoom.init({
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false
+    },
+    ChatRoomId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'ChatRooms',
+        key: 'id'
+      }
     }
   }, {
     sequelize,
