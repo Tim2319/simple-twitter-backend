@@ -22,6 +22,14 @@ module.exports = (sequelize, DataTypes) => {
     message: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    ChatRoomId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'ChatRooms',
+        key: 'id'
+      }
     }
   }, {
     sequelize,
