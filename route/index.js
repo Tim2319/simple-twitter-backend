@@ -8,7 +8,7 @@ const rooms = require('./modules/rooms')
 const { authenticated, authenticatedAdmin } = require('../middleware/auth')
 
 // 總體路由
-router.use('/users', authenticated, users)
+router.use('/users', users)
 router.use('/posts', authenticated, posts)
 router.use('/admin', authenticated, authenticatedAdmin, admins)
 router.use('/rooms', authenticated, rooms)
