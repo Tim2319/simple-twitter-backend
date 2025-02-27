@@ -22,12 +22,12 @@ module.exports = (sequelize, DataTypes) => {
         as: 'CommentedPosts'
       })
       User.belongsToMany(models.User, {
-        through: models.Followship,
+        through: models.FollowShip,
         foreignKey: 'followingId',
         as: 'Followers'
       })
       User.belongsToMany(models.User, {
-        through: models.Followship,
+        through: models.FollowShip,
         foreignKey: 'followerId',
         as: 'Followings'
       })

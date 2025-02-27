@@ -202,19 +202,19 @@ async function checkUserInfo (req) {
   return false
   // }
 }
-function getFollowshipInfo (user, followships, currentUserFollowings) {
-  const idName = followships === 'Followers' ? 'followerId' : 'followingId'
+function getFollowShipInfo (user, FollowShips, currentUserFollowings) {
+  const idName = FollowShips === 'Followers' ? 'followerId' : 'followingId'
 
-  return user.dataValues[followships].map(followship => {
-    if (!followship.role === 'admin') {
+  return user.dataValues[FollowShips].map(FollowShip => {
+    if (!FollowShip.role === 'admin') {
       return null
     }
     return {
-      [idName]: followship.id,
-      name: followship.name,
-      account: followship.account,
-      profilePic: followship.profilePic,
-      isFollowed: currentUserFollowings.includes(followship.id)
+      [idName]: FollowShip.id,
+      name: FollowShip.name,
+      account: FollowShip.account,
+      profilePic: FollowShip.profilePic,
+      isFollowed: currentUserFollowings.includes(FollowShip.id)
     }
   })
 }
@@ -261,7 +261,7 @@ module.exports = {
   getOtherUser,
   updateTime,
   createNotification,
-  getFollowshipInfo,
+  getFollowShipInfo,
   getResourceInfo,
   checkUserInfo,
   getUserInfoId

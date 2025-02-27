@@ -1,5 +1,5 @@
 const db = require('../models')
-const { User, Followship } = db
+const { User, FollowShip } = db
 
 const followerController = {
   followUser: async (req, res, next) => {
@@ -15,21 +15,21 @@ const followerController = {
         })
       }
 
-      const existingFollowship = await Followship.findOne({
+      const existingFollowShip = await FollowShip.findOne({
         where: {
           followingId,
           followerId
         }
       })
 
-      if (existingFollowship) {
+      if (existingFollowShip) {
         return res.status(400).json({
           status: 'error',
           message: `already followed @${followingUser.account}`
         })
       }
 
-      await Followship.create({
+      await FollowShip.create({
         followerId,
         followingId
       })
@@ -56,21 +56,21 @@ const followerController = {
         })
       }
 
-      const existingFollowship = await Followship.findOne({
+      const existingFollowShip = await FollowShip.findOne({
         where: {
           followingId,
           followerId
         }
       })
 
-      if (!existingFollowship) {
+      if (!existingFollowShip) {
         return res.status(400).json({
           status: 'error',
           message: 'You are not following this user'
         })
       }
 
-      await existingFollowship.destroy()
+      await existingFollowShip.destroy()
 
       return res.status(200).json({
         status: 'success',
