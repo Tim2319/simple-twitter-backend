@@ -15,23 +15,23 @@ const postController = {
       const likes = getUserInfoId(req, 'LikedPosts')
 
       const formattedPosts = posts.map(posts => {
-        const { id, UserId, content, media, createdAt, updatedAt, comments, Likes, PostUser } = posts
+        const { id, userId, content, media, createdAt, updatedAt, Comments, Likes, User } = posts
         return {
           id,
-          UserId,
+          userId,
           content,
           media,
           slicedContent: content.trim().slice(0, 50),
           createdAt,
           updatedAt,
-          commentCount: comments.length,
+          commentCount: Comments.length,
           likeCount: Likes.length,
           isLiked: likes ? likes.includes(id) : null,
           user: {
-            id: PostUser.id,
-            avatar: PostUser.avatar,
-            name: PostUser.name,
-            account: PostUser.account
+            id: User.id,
+            profilePic: User.profilePic,
+            name: User.name,
+            account: User.account
           }
         }
       })
@@ -101,13 +101,13 @@ const postController = {
       const media = files ? files.map(files => `/uploads/${files.filename}`) : []
 
       const post = await Post.create({
+        userId: req.user.id,
         content,
-        media: JSON.stringify(media),
-        UserId: req.user.id
+        media: JSON.stringify(media)
       })
       return res.status(200).json({
         status: 'success',
-        message: 'successfully posted a tweet',
+        message: 'successfully posted a post',
         post
       })
     } catch (error) {
@@ -123,7 +123,7 @@ const postController = {
           message: 'Post not found'
         })
       }
-      if (post.UserId !== req.user.id) {
+      if (post.userId !== req.user.id) {
         return res.status(403).json({
           status: 'error',
           message: 'Permission denied'
@@ -167,7 +167,7 @@ const postController = {
           message: 'Post not found'
         })
       }
-      if (post.UserId !== req.user.id) {
+      if (post.userId !== req.user.id) {
         return res.status(403).json({
           status: 'error',
           message: 'Permission denied'
@@ -225,7 +225,7 @@ const postController = {
       const like = await Like.findOne({
         where: {
           postId: post.id,
-          UserId: req.user.id
+          userId: req.user.id
         }
       })
       if (like) {
@@ -237,7 +237,7 @@ const postController = {
       }
       await Like.create({
         postId: post.id,
-        UserId: req.user.id
+        userId: req.user.id
       })
       return res.json({
         status: 'success',
@@ -274,7 +274,7 @@ const postController = {
         content,
         media: JSON.stringify(media),
         postId: post.id,
-        UserId: req.user.id
+        userId: req.user.id
       })
       return res.json({
         status: 'success',
