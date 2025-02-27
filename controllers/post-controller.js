@@ -294,7 +294,7 @@ const postController = {
   getComments: async (req, res, next) => {
     try {
       const post = await Post.findByPk(req.params.id, {
-        include: [Comment]
+        include: [{ model: Comment, as: 'Comments' }]
       })
       if (!post) {
         return res.status(404).json({
@@ -304,7 +304,7 @@ const postController = {
       }
       return res.json({
         status: 'success',
-        comments: post.comments
+        comments: post.Comments
       })
     } catch (error) {
       next(error)
@@ -314,14 +314,19 @@ const postController = {
     try {
       const { content } = req.body
       const { files } = req
-      const text = await Comment.findByPk(req.params.commentId)
-      if (!text) {
+      const commentId = req.params.comment_id
+
+      const comment = await Comment.findByPk(commentId, {
+        attributes: ['id', 'userId', 'media']
+      })
+
+      if (!comment) {
         return res.status(404).json({
           status: 'error',
           message: 'Comment not found'
         })
       }
-      if (Comment.UserId !== req.user.id) {
+      if (comment.userId !== req.user.id) {
         return res.status(403).json({
           status: 'error',
           message: 'Permission denied'
