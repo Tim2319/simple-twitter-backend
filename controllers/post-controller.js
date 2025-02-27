@@ -43,7 +43,7 @@ const postController = {
   },
   getPost: async (req, res, next) => {
     try {
-      const post = await Post.findByPk(req.params.id, {
+      let post = await Post.findByPk(req.params.id, {
         include: [User, Like, Comment]
       })
 
@@ -54,25 +54,25 @@ const postController = {
         })
       }
       const likes = getUserInfoId(req, 'LikedPosts')
-      const isLiked = likes ? likes.includes(post.id) : null
 
-      const { id, UserId, content, media, createdAt, updatedAt, comments, Likes, PostUser } = post
-      return res.status(200).json({
-        id,
-        UserId,
-        content,
-        media,
-        createdAt,
-        updatedAt,
-        commentCount: comments.length,
-        likeCount: Likes.length,
-        isLiked,
+      post = {
+        id: post.id,
+        content: post.content,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
         user: {
-          id: PostUser.id,
-          avatar: PostUser.avatar,
-          name: PostUser.name,
-          account: PostUser.account
-        }
+          id: post.User.id,
+          name: post.User.name,
+          account: post.User.account,
+          profilePic: post.User.profilePic
+        },
+        likesLength: post.Likes.length,
+        commentsLength: post.Comments.length,
+        isLiked: likes ? likes.includes(post.id) : null
+      }
+
+      return res.status(200).json({
+        post
       })
     } catch (error) {
       next(error)
