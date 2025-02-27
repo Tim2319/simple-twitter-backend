@@ -51,7 +51,7 @@ const adminController = {
       next(err)
     }
   },
-  deleteUsers: async (req, res, next) => {
+  deletePost: async (req, res, next) => {
     try {
       const post = await Post.findByPk(req.params.id)
 

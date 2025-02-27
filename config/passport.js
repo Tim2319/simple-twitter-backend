@@ -15,7 +15,7 @@ jwtOptions.secretOrKey = process.env.JWT_SECRET
 const Strategy = new JwtStrategy(jwtOptions, async (jwtPayload, done) => {
   const user = await User.findByPk(jwtPayload.id, {
     include: [
-      { model: Post, as: 'CommentPosts' },
+      { model: Post, as: 'CommentedPosts' },
       { model: Post, as: 'LikedPosts' },
       { model: User, as: 'Followers' },
       { model: User, as: 'Followings' }

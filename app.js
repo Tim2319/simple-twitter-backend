@@ -5,7 +5,7 @@ const cors = require('cors')
 const morgan = require('morgan')
 
 const app = express()
-const routes = require('./routes')
+const routes = require('./route')
 const { socketServer } = require('./utils/socket')
 
 require('dotenv').config()
@@ -13,7 +13,7 @@ require('dotenv').config()
 const http = require('http')
 const server = http.createServer(app)
 const io = require('socket.io')(server)
-const PORT = process.env.PORT || 3306
+const PORT = process.env.PORT || 3000
 
 // Create upload directory if not exists
 const uploadDir = path.join(__dirname, 'public', 'uploads')

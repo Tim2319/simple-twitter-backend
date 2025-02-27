@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 
-const passport = require('../config/password')
+const passport = require('../config/passport.js')
 
 const auth = {
   authenticated: (req, res, next) => {
@@ -29,7 +29,7 @@ const auth = {
     })
   },
   authenticatedUser: (req, res, next) => {
-    if (req.user && req.user.role !== 'user') { return next() }
+    if (req.user && req.user.role === 'user') { return next() }
     return res.status(401).json({
       status: 'error',
       message: 'permission denied'
