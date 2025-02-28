@@ -157,16 +157,20 @@ const userController = {
           'account',
           'profilePic',
           [
-            sequelize.fn('count', sequelize.col('Followers.id')),
+            sequelize.literal('(SELECT COUNT(*) FROM FollowShips WHERE FollowShips.followingId = User.id)'),
             'followersCount'
           ]
         ],
-
         include: [
-          { model: User, as: 'Followers', attributes: [] }
+          {
+            model: User,
+            as: 'Followers',
+            attributes: [],
+            through: { attributes: [] }
+          }
         ],
         group: ['User.id'],
-        order: [[sequelize.literal('followerCount'), 'DESC']],
+        order: [[sequelize.literal('followersCount'), 'DESC']],
         limit: 10
       })
 
@@ -178,7 +182,7 @@ const userController = {
         email: user.email,
         account: user.account,
         profilePic: user.profilePic,
-        followerCount: user.dataValues.followerCount,
+        followerCount: user.dataValues.followersCount || 0,
         isFollowed: followings.includes(user.id)
       }))
 
