@@ -136,7 +136,7 @@ const userController = {
         introduction: user.introduction,
         cover: user.cover,
         role: user.role,
-        postCount: user.Post.length,
+        postCount: user.Posts.length,
         followerCount: user.Followers.length,
         followingCount: user.Followings.length,
         isFollowed: followings.includes(user.id)
@@ -304,7 +304,7 @@ const userController = {
           model: Post,
           include: [Comment, Like]
         }],
-        order: [[sequelize.literal('`Post`. `createdAt`'), 'DESC']]
+        order: [[sequelize.literal('`Posts`.`createdAt`'), 'DESC']]
       })
 
       if (!user || user.role === 'admin') {
@@ -337,7 +337,7 @@ const userController = {
             model: Comment,
             include: [{ model: Post, include: [Like, Comment, User] }]
           }],
-        order: [[sequelize.literal('`Comment`. `createdAt`'), 'DESC']]
+        order: [[sequelize.literal('`Comments`.`createdAt`'), 'DESC']]
       })
 
       if (!user || user.role === 'admin') {
@@ -381,7 +381,7 @@ const userController = {
     try {
       const user = await User.findByPk(req.params.id, {
         include: [{ model: User, as: 'Followers' }],
-        order: [[sequelize.literal('`Followers->Followship`. `createdAt`'), 'DESC']]
+        order: [[sequelize.literal('`Followers->FollowShip`.`createdAt`'), 'DESC']]
       })
 
       if (!user || user.role === 'admin') {
@@ -404,7 +404,7 @@ const userController = {
     try {
       const user = await User.findByPk(req.params.id, {
         include: [{ model: User, as: 'Followings' }],
-        order: [[sequelize.literal('`Followings->Followship`. `createdAt`'), 'DESC']]
+        order: [[sequelize.literal('`Followings->FollowShip`. `createdAt`'), 'DESC']]
       })
 
       if (!user || user.role === 'admin') {
