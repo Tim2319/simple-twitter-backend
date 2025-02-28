@@ -1,5 +1,5 @@
 const db = require('../models')
-const { ChatRoom, JoinRoom, Message, User, Post, Comment } = db
+const { ChatRoom, JoinRoom, Message, User, Post, Comment, Notification } = db
 const { sequelize, Sequelize } = require('../models')
 const PUBLIC_ROOM_ID = require('../utils/userValidation')
 const { Op } = require('sequelize')
@@ -7,8 +7,17 @@ const { Op } = require('sequelize')
 const roomController = {
   getRoom: async (req, res, next) => {
     try {
-      const roomId = req.params.id
+      const roomId = Number(req.params.roomId) || null
       const userId = req.user.id
+
+      if (!roomId) {
+        return res.status(400).json({ status: 'error', message: 'Missing roomId' })
+      }
+
+      const chatRoom = await ChatRoom.findOne({ where: { id: roomId } })
+      if (!chatRoom) {
+        return res.status(404).json({ status: 'error', message: 'Chat room not found' })
+      }
 
       const set = new Set()
       const onlineUsers = []
@@ -38,13 +47,13 @@ const roomController = {
         raw: true,
         nest: true,
         include: [User],
-        where: { chatRoomId: roomId },
+        where: { ChatRoomId: roomId },
         order: [['createdAt', 'ASC']]
       })
 
       const messageData = messages.map(message => ({
         id: message.id,
-        profilePic: message.User.profilePic,
+        profilePic: message.User?.profilePic || null,
         UserId: message.UserId,
         message: message.message,
         createdAt: message.createdAt
@@ -73,37 +82,40 @@ const roomController = {
         include: [
           {
             model: ChatRoom,
-            where: { isPublic: false },
+            as: 'chatRoom',
+            where: { isGroup: false },
             attributes: ['id']
           }
         ],
         where: {
           userId: [currentUserId, receiverId]
         },
-        group: ['ChatRoom.id'],
-        having: sequelize.literal('COUNT(chatroomId) = 2')
+        attributes: ['id'],
+        group: ['chatRoom.id'],
+        having: sequelize.literal('COUNT(ChatRoomId) = 2')
       })
 
       if (existingRoom) {
-        console.log('Found existing room:', existingRoom.chatRoomId.id)
+        console.log('Found existing room:', existingRoom.chatRoom.id)
         await JoinRoom.update(
           { updatedAt: new Date() },
           {
             where: {
               userId: [currentUserId, receiverId],
-              ChatroomId: existingRoom.chatRoomId.id
+              ChatRoomId: existingRoom.ChatRoomId.id
             }
           }
         )
 
         return res.status(200).json({
           status: 'success',
-          roomId: existingRoom.chatRoomId.id
+          roomId: existingRoom.ChatRoomId.id
         })
       }
       // create a new room
       const newRoom = await ChatRoom.create({
-        isPublic: false
+        name: `Private Chat ${currentUserId}-${receiverId ?? 'Unknown'}`,
+        isGroup: false
       })
 
       await JoinRoom.bulkCreate([
@@ -121,7 +133,7 @@ const roomController = {
     }
   },
   // join public room
-  getRoomByUser: async (req, res, next) => {
+  getRoomsByUser: async (req, res, next) => {
     try {
       const currentUserId = req.user.id
       const joinedRooms = await JoinRoom.findAll({
@@ -216,9 +228,9 @@ const roomController = {
         raw: true
       })
 
-      const chatRoomIds = joinedRooms.map(room => room.ChatRoomId)
+      const ChatRoomIds = joinedRooms.map(room => room.ChatRoomId)
 
-      if (!chatRoomIds.length) {
+      if (!ChatRoomIds.length) {
         return res.status(200).json(0) // Return 0 if the user has not joined any rooms
       }
 
@@ -231,6 +243,7 @@ const roomController = {
             include: [
               {
                 model: JoinRoom,
+                as: 'chatRoom',
                 required: true,
                 where: {
                   UserId: currentUserId,
@@ -241,7 +254,7 @@ const roomController = {
           }
         ],
         where: {
-          ChatRoomId: { [Op.in]: chatRoomIds } // Only count messages created after the user's last update
+          ChatRoomId: { [Op.in]: ChatRoomIds } // Only count messages created after the user's last update
         }
       })
 
@@ -263,11 +276,11 @@ const roomController = {
           },
           {
             model: Post,
-            attributes: ['id', 'description']
+            attributes: ['id', 'content']
           },
           {
             model: Comment,
-            attributes: ['id', 'comment']
+            attributes: ['id', 'content']
           }
         ],
         order: [['updatedAt', 'DESC']],
@@ -285,7 +298,7 @@ const roomController = {
         name: el.User?.name || null, // Handle cases where associations may be missing
         profilePic: el.User?.profilePic || null,
         PostId: el.Post?.id || null,
-        Post: el.Post?.description || null,
+        Post: el.Post?.content || null,
         CommentId: el.Comment?.id || null,
         Comment: el.Comment?.comment || null,
         type: el.type
