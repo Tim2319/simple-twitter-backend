@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken')
 const validator = require('validator')
 const sequelize = require('sequelize')
 
-const DEFAULT_PROFILE_PIC = require('../image/profilePic.png')
-const DEFAULT_COVER = require('../image/cover.png')
+const DEFAULT_PROFILE_PIC = '/image/profilePic.png'
+const DEFAULT_COVER = '/image/cover.png'
 
 const { User, Post, Comment, Like } = db
 const { checkUserInfo, getUserInfoId, getResourceInfo } = require('../utils/userValidation')
