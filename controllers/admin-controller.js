@@ -40,8 +40,8 @@ const adminController = {
           account: user.account,
           profilePic: user.profilePic,
           cover: user.cover,
-          postCount: user.postCount,
-          likeCount: user.likeCount,
+          postCount: user.dataValues.postCount,
+          likeCount: user.dataValues.likeCount,
           followersCount: user.Followers.length,
           followingsCount: user.Followings.length
         }
