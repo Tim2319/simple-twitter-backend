@@ -314,9 +314,10 @@ const postController = {
     try {
       const { content } = req.body
       const { files } = req
-      const commentId = req.params.comment_id
+      const { id: postId, comment_id: commentId } = req.params
 
-      const comment = await Comment.findByPk(commentId, {
+      const comment = await Comment.findOne({
+        where: { id: commentId, postId },
         attributes: ['id', 'userId', 'media']
       })
 
@@ -360,12 +361,13 @@ const postController = {
         content: content.trim(),
         media: JSON.stringify(media)
       },
-      { where: { id: comment.id } }
+      { where: { id: comment.id, postId } }
       )
       return res.json({
         status: 'success',
         message: 'Comment updated',
-        content
+        content,
+        media
       })
     } catch (error) {
       next(error)
