@@ -15,6 +15,13 @@ const followerController = {
         })
       }
 
+      if (Number(followingId) === followerId) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'You cannot follow yourself.'
+        })
+      }
+
       const existingFollowShip = await FollowShip.findOne({
         where: {
           followingId,
@@ -53,6 +60,13 @@ const followerController = {
         return res.status(404).json({
           status: 'error',
           message: 'User not found or cannot unfollow admin'
+        })
+      }
+
+      if (Number(followingId) === followerId) {
+        return res.status(403).json({
+          status: 'error',
+          message: 'You cannot unfollow yourself.'
         })
       }
 
