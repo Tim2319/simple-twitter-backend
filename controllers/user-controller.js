@@ -8,7 +8,7 @@ const DEFAULT_PROFILE_PIC = '/image/profilePic.png'
 const DEFAULT_COVER = '/image/cover.png'
 
 const { User, Post, Comment, Like } = db
-const { checkUserInfo, getUserInfoId, getResourceInfo } = require('../utils/userValidation')
+const { checkUserInfo, getUserInfoId, getFollowShipInfo, getResourceInfo } = require('../utils/userValidation')
 
 const userController = {
   registerUser: async (req, res, next) => {
@@ -194,7 +194,7 @@ const userController = {
   editUser: async (req, res, next) => {
     const userId = req.user.id
     const id = req.params.id
-    const { name, introduction, page } = req.body
+    const { name, introduction, page, gender, birthdate } = req.body
 
     // Users can only edit their own profile
     if (userId !== Number(id)) {
@@ -249,7 +249,7 @@ const userController = {
 
       // Update profile
       const errors = []
-      const { file } = req
+      const { files } = req
       const acceptedType = ['.png', '.jpg', '.jpeg']
 
       if (name && !validator.isByteLength(name, { min: 1, max: 50 })) {
@@ -260,17 +260,17 @@ const userController = {
         errors.push({ message: 'Introduction can not be longer than 160 characters.' })
       }
 
-      if (file) {
-        if (file.profilePic) {
-          const fileType = file.profilePic[0].originalname.substring(file.profilePic[0].originalname.lastIndexOf('.')).toLowerCase()
+      if (files) {
+        if (files.profilePic) {
+          const fileType = files.profilePic[0].originalname.substring(files.profilePic[0].originalname.lastIndexOf('.')).toLowerCase()
           if (!acceptedType.includes(fileType)) {
             errors.push({
               message: 'Profile picture type is not accepted. Please upload an image ending with png, jpg, or jpeg.'
             })
           }
         }
-        if (file.cover) {
-          const fileType = file.cover[0].originalname.substring(file.cover[0].originalname.lastIndexOf('.')).toLowerCase()
+        if (files.cover) {
+          const fileType = files.cover[0].originalname.substring(files.cover[0].originalname.lastIndexOf('.')).toLowerCase()
           if (!acceptedType.includes(fileType)) {
             errors.push({
               message: 'Cover type is not accepted. Please upload an image ending with png, jpg, or jpeg.'
@@ -290,9 +290,13 @@ const userController = {
       await user.update({
         name,
         introduction,
-        profilePic: file && file.profilePic ? `/uploads/${file.profilePic[0].filename}` : user.profilePic,
-        cover: file ? `/uploads/${file.cover[0].filename}` : user.cover
+        gender,
+        birthdate: birthdate || user.birthdate,
+        profilePic: files && files.profilePic ? `/uploads/${files.profilePic[0].filename}` : user.profilePic,
+        cover: files ? `/uploads/${files.cover[0].filename}` : user.cover
       })
+
+      await user.reload()
       return res.status(200).json({
         status: 'success',
         message: 'User profile has been successfully updated.'
@@ -363,7 +367,11 @@ const userController = {
   getLikes: async (req, res, next) => {
     try {
       const user = await User.findByPk(req.params.id, {
-        include: [{ model: Like, include: [User, Post] }]
+        include: [{
+          model: Like,
+          include: [{ model: Post, include: [User, Like, Comment] }]
+        }],
+        order: [[sequelize.literal('`Likes`.`createdAt`'), 'DESC']]
       })
 
       if (!user || user.role === 'admin') {
@@ -397,7 +405,7 @@ const userController = {
 
       // Clean up followers data
       const currentUserFollowings = getUserInfoId(req, 'Followers')
-      const followers = getResourceInfo(user, 'Followers', currentUserFollowings)
+      const followers = getFollowShipInfo(user, 'Followers', currentUserFollowings)
 
       return res.status(200).json(followers)
     } catch (error) {
@@ -420,7 +428,7 @@ const userController = {
 
       // Clean up followings data
       const currentUserFollowings = getUserInfoId(req, 'Followings')
-      const followings = getResourceInfo(user, 'Followings', currentUserFollowings)
+      const followings = getFollowShipInfo(user, 'Followings', currentUserFollowings)
 
       return res.status(200).json(followings)
     } catch (error) {
