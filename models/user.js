@@ -62,11 +62,13 @@ module.exports = (sequelize, DataTypes) => {
       },
       gender: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        defaultValue: 'not_set'
       },
       birthdate: {
-        type: DataTypes.DATEONLY,
-        allowNull: false
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: new Date('1970-01-01')
       },
       account: {
         type: DataTypes.STRING,
