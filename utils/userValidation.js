@@ -206,7 +206,7 @@ function getFollowShipInfo (user, FollowShips, currentUserFollowings) {
   const idName = FollowShips === 'Followers' ? 'followerId' : 'followingId'
 
   return user.dataValues[FollowShips].map(FollowShip => {
-    if (!FollowShip.role === 'admin') {
+    if (FollowShip.role === 'admin') {
       return null
     }
     return {
@@ -232,7 +232,7 @@ function getResourceInfo (user, resource, likes) {
       postId: el.postId,
       post: {
         id: post.id,
-        description: post.description,
+        content: post.content,
         createdAt: post.createdAt,
         isLiked: likes.includes(post.id),
         User: {
