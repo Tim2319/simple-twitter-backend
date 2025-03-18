@@ -1,0 +1,989 @@
+openapi: 3.0.0
+info:
+  title: Simple Twitter API
+  description: A RESTful API for a Twitter-like social platform
+  contact:
+    name: GitHub repo
+    url: 'https://github.com/Tim2319/simple-twitter-backend.git'
+  version: 1.0.0
+
+servers:
+  - url: 'http://localhost:3000/api'
+    description: Development Server
+tags:
+  - name: Admin
+    description: Admin related
+  - name: Users
+    description: User related
+  - name: Posts
+    description: Posts related
+  - name: Comments
+    description: Comments related
+  - name: Rooms
+    description: Chatroom related
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+
+paths:
+  /admin/users:
+    get:
+      summary: Get all users data (Admin Only)
+      tags:
+        - Admin
+      responses:
+        "200":
+          description: Successfully retrieved users
+          content:
+            application/json:
+              example:
+                [
+                  {
+                    "id": 3,
+                    "name": "user2",
+                    "account": "user2",
+                    "profilePic": "/image/profilePic.png",
+                    "cover": "/image/cover.png",
+                    "postCount": 50,
+                    "likeCount": 0,
+                    "followersCount": 1,
+                    "followingsCount": 0
+                  }
+                ]
+        "401":
+          description: Access token is invalid
+
+  /admin/posts/{id}:
+    delete:
+      summary: Delete a post (Admin Only)
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The Id of the post to delete
+      responses:
+        "200":
+          description: Post deleted successfully
+          content:
+            application/json:
+              example:
+                status: success
+                message: "Post deleted successfully"
+        "401":
+          description: Access token is invalid
+
+  /users/signin:
+    post:
+      summary: User login
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              account: "user1"
+              password: "123456789"
+      responses:
+        "200":
+          description: Successfully logged in
+          content:
+            application/json:
+              example:
+                status: success
+                token: "JWT-TOKEN"
+                user:
+                  {
+                  "id": 2,
+                  "name": "user1",
+                  "email": "user1@example.com",
+                  "account": "user1",
+                  "profilePic": "/image/profilePic.png",
+                  "introduction": "Minus trepide vesco repudiandae abutor. Agnitio ad",
+                  "cover": "/image/cover.png",
+                  "role": "user"
+                  }
+        "401":
+          description: Password is incorrect
+        "404":
+          description: User not found
+
+  /users/signup:
+    post:
+      summary: Create a new user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              account: "test1"
+              name: "test1"
+              email: "test1@example.com"
+              password: "123456789"
+              checkPassword: "123456789"
+      responses:
+        "200":
+          description: Successfully registered
+        "400":
+          description: User already exists or missing fields
+  /users/top:
+    get:
+      summary: Get top 10 most followed users
+      tags:
+        - Users
+      responses:
+        "200":
+          description: Successfully retrieved top users.
+        "401":
+          description: Access token is missing or invalid
+
+  /users/current_user:
+    get:
+      summary: Get the current login user data
+      tags:
+        - Users
+      responses:
+        "200":
+          description: Successfully retrieved current user data
+          content:
+            application/json:
+              example:
+                {
+                  "id": 2,
+                  "name": "user1",
+                  "email": "user1@example.com",
+                  "account": "user1",
+                  "profilePic": "/image/profilePic.png",
+                  "introduction": "Minus trepide vesco repudiandae abutor. Agnitio ad",
+                  "cover": "/image/cover.png",
+                  "role": "user"
+                }
+        "401":
+          description: Access token is missing or invalid
+
+  /users/{id}:
+    get:
+      summary: Get user data by ID
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved user data
+          content:
+            application/json:
+              example:
+                {
+                    "id": 2,
+                    "name": "user1",
+                    "email": "user1@example.com",
+                    "account": "user1",
+                    "profilePic": "/image/profilePic.png",
+                    "introduction": "Minus trepide vesco repudiandae abutor. Agnitio ad",
+                    "cover": "/image/cover.png",
+                    "role": "user",
+                    "postCount": 10,
+                    "followerCount": 0,
+                    "followingCount": 1,
+                    "isFollowed": false
+                }
+        "404":
+          description: User not found
+
+    put:
+      summary: Edit user profile
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              - account
+              - name
+              - email
+              - password
+              - profilePic
+              - cover
+              - introduction
+      responses:
+        "200":
+          description: Successfully updated user profile
+        "403":
+          description: Cannot edit other user's profile
+
+  /users/{id}/posts:
+    get:
+      summary: Get posts by user id
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved posts
+          content:
+            application/json:
+              example:
+                [
+                  {
+                      "id": 51,
+                      "content": "It's a good day",
+                      "createdAt": "2025-02-23T10:56:35.000Z",
+                      "likesCount": 0,
+                      "commentsCount": 0,
+                      "isLiked": false
+                  }
+                ]
+        "401": 
+          description: Access token is missing or invalid
+        "404":
+          description: User not found
+
+  /users/{id}/likes:
+    get:
+      summary: Get all liked posts of a user
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved liked posts
+          content:
+            application/json:
+              example:
+              [
+                {
+                    "id": 3,
+                    "createdAt": "2025-03-03T17:41:06.000Z",
+                    "postId": 2,
+                    "post": {
+                        "id": 2,
+                        "content": "Commodo correptius video amor amplexus surgo damnatio theca decimus.",
+                        "createdAt": "2025-02-14T05:50:04.000Z",
+                        "isLiked": true,
+                        "User": {
+                            "id": 3,
+                            "account": "user2",
+                            "name": "user2",
+                            "profilePic": "/image/profilePic.png"
+                        },
+                        "commentsCount": 4,
+                        "likesCount": 1
+                    }
+                }
+              ]
+        "401": 
+          description: Access token is missing or invalid
+        "404":
+          description: User not found
+
+  /users/{id}/comment_posts:
+    get:
+      summary: Get all posts a user has commented on
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved commented posts
+          content:
+            application/json:
+              example:
+              [
+                {
+                    "id": 152,
+                    "createdAt": "2025-02-24T09:15:54.000Z",
+                    "postId": 2,
+                    "post": {
+                        "id": 2,
+                        "content": "Commodo correptius video amor amplexus surgo damnatio theca decimus.",
+                        "createdAt": "2025-02-14T05:50:04.000Z",
+                        "isLiked": true,
+                        "User": {
+                            "id": 3,
+                            "account": "user2",
+                            "name": "user2",
+                            "profilePic": "/image/profilePic.png"
+                        },
+                        "commentsCount": 4,
+                        "likesCount": 1
+                    }
+                }
+              ]
+        "404":
+          description: User not found
+
+  /users/{id}/followers:
+    get:
+      summary: Get all followers of a user
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved followers
+          content:
+            application/json:
+              example:
+              [
+                {
+                    "followerId": 4,
+                    "name": "user3",
+                    "account": "user3",
+                    "profilePic": "/image/profilePic.png",
+                    "isFollowed": true
+                }
+              ]
+        "404":
+          description: User not found
+
+  /users/{id}/followings:
+    get:
+      summary: Get all followings of a user
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved followings
+          content:
+            application/json:
+              example:
+              [
+                {
+                    "followingId": 2,
+                    "name": "user1",
+                    "account": "user1",
+                    "profilePic": "/image/profilePic.png",
+                    "isFollowed": true
+                },
+                {
+                    "followingId": 3,
+                    "name": "user2",
+                    "account": "user2",
+                    "profilePic": "/image/profilePic.png",
+                    "isFollowed": true
+                }
+              ]
+        "404":
+          description: User not found
+
+  /users/{id}/follow:
+    post:
+      summary: Follow a user
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully followed user
+          content:
+            application/json:
+              example:
+              {
+                "status": "success",
+                "message": "followed @user3",
+                "followingUser": {
+                    "id": 4,
+                    "name": "user3",
+                    "email": "user3@example.com",
+                    "password": "$2a$10$0uTNeZU7D16lt5HKEw3GbOEFyGg/7uCoK8MvvBDpJ2xMW.UIAbVgq",
+                    "gender": "female",
+                    "birthdate": "1996-04-15",
+                    "account": "user3",
+                    "role": "user",
+                    "profilePic": "/image/profilePic.png",
+                    "cover": "/image/cover.png",
+                    "introduction": "Nostrum ager placeat. Surgo calco volubilis. Adsid",
+                    "createdAt": "2025-02-14T02:13:19.000Z",
+                    "updatedAt": "2025-02-14T02:13:19.000Z"
+                }
+              }
+        "403":
+          description: Cannot follow yourself
+
+  /users/{id}/unfollow:
+    delete:
+      summary: Unfollow a user
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully unfollowed user
+          content:
+            application/json:
+              example:
+              {
+                "status": "success",
+                "message": "Successfully unfollowed user2"
+              }
+        "403":
+          description: Cannot unfollow yourself
+
+  /posts:
+    get:
+      summary: Get all posts
+      tags:
+        - Posts
+      responses:
+        "200":
+          description: Successfully retrieved all posts
+          content:
+            application/json:
+              example:
+              {
+                "posts": [
+                    {
+                        "id": 51,
+                        "userId": 2,
+                        "content": "It's a good day",
+                        "media": "[]",
+                        "slicedContent": "It's a good day",
+                        "createdAt": "2025-02-23T10:56:35.000Z",
+                        "updatedAt": "2025-02-23T10:56:35.000Z",
+                        "commentCount": 0,
+                        "likeCount": 0,
+                        "isLiked": false,
+                        "user": {
+                            "id": 2,
+                            "profilePic": "/uploads/1741190116041-640.jpg",
+                            "name": "John Doe",
+                            "account": "user1"
+                        }
+                    },
+                    {
+                        "id": 8,
+                        "userId": 4,
+                        "content": "Cruentus arbor tolero aveho tubineus defungo.",
+                        "media": null,
+                        "slicedContent": "Cruentus arbor tolero aveho tubineus defungo.",
+                        "createdAt": "2025-02-14T05:50:04.000Z",
+                        "updatedAt": "2025-02-14T05:50:04.000Z",
+                        "commentCount": 3,
+                        "likeCount": 0,
+                        "isLiked": false,
+                        "user": {
+                            "id": 4,
+                            "profilePic": "/image/profilePic.png",
+                            "name": "user3",
+                            "account": "user3"
+                        }
+                    }
+                    ]
+                }
+        "401":
+          description: Access token is missing or invalid
+
+    post:
+      summary: Create a post
+      tags:
+        - Posts
+      requestBody:
+        required: true
+      responses:
+        "200":
+          description: Successfully created a post
+          content:
+            application/json:
+              example:
+              {
+                "status": "success",
+                "message": "successfully posted a post",
+                "post": {
+                    "id": 53,
+                    "userId": 2,
+                    "content": "It's a good day",
+                    "media": "[]",
+                    "updatedAt": "2025-03-09T07:48:57.293Z",
+                    "createdAt": "2025-03-09T07:48:57.293Z"
+                }
+              }
+        "422":
+          description: input should not be blank
+          content:
+            application/json:
+              example:
+              {
+                "status": "error",
+                "message": "input should not be blank"
+              }
+  /posts/{id}:
+    get:
+      summary: Get a single post
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved post
+          content:
+            application/json:
+              example:
+              {
+                "post": {
+                    "id": 6,
+                    "content": "Sequi vestigium cavus verumtamen quidem deficio stultus. Communis vilitas crepusculum quod. Debilito tolero abutor varietas turbo consequuntur cunabula. Abscido quae surgo bos capitulus territo cogito depereo amoveo.",
+                    "createdAt": "2025-02-14T05:50:04.000Z",
+                    "updatedAt": "2025-02-14T05:50:04.000Z",
+                    "user": {
+                        "id": 2,
+                        "name": "John Doe",
+                        "account": "user1",
+                        "profilePic": "/uploads/1741190116041-640.jpg"
+                    },
+                    "likesLength": 0,
+                    "commentsLength": 2,
+                    "isLiked": false
+                }
+              }
+        "404":
+          description: Post not found
+
+    put:
+      summary: Update a post
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+      responses:
+        "200":
+          description: Successfully updated post
+          content:
+            application/json:
+              example:
+              {
+                  "status": "success",
+                  "message": "Post updated",
+                  "post": {
+                      "id": 54,
+                      "userId": 2,
+                      "content": "test,test",
+                      "media": "[\"/uploads/1741610898047-米塔可愛.jpg\",\"/uploads/1741610898048-老兄不酷喔.jpg\"]",
+                      "createdAt": "2025-03-09T07:49:40.000Z",
+                      "updatedAt": "2025-03-10T12:48:18.052Z"
+                  }
+              }
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              example:
+              {
+                  "status": "error",
+                  "message": "Post not found"
+              }
+
+    delete:
+      summary: Delete a post
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully deleted post
+          content:
+            application/json:
+              example:
+              {
+                  "status": "success",
+                  "message": "Post deleted"
+              }
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              example:
+              {
+                  "status": "error",
+                  "message": "Post not found"
+              }
+
+  /posts/{id}/like:
+    post:
+      summary: Like or Unlike a post
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully liked or unliked post
+          content:
+            application/json:
+              example:
+              {
+                  "status": "success",
+                  "message": "Like post"
+              }
+              {
+                  "status": "success",
+                  "message": "Unlike post"
+              }
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              example:
+              {
+                  "status": "error",
+                  "message": "Post not found"
+              }
+
+  /posts/{id}/comments:
+    post:
+      summary: Comment on a post
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              - content
+              - media
+      responses:
+        "200":
+          description: Successfully create comment under the post
+          content:
+            application/json:
+              example:
+              {
+                  "status": "success",
+                  "message": "Comment added to user1's post",
+                  "text": {
+                      "id": 154,
+                      "content": "hi,baby",
+                      "media": "[\"/uploads/1741533764827-米塔可愛.jpg\"]",
+                      "postId": 2,
+                      "userId": 2,
+                      "updatedAt": "2025-03-09T15:22:44.831Z",
+                      "createdAt": "2025-03-09T15:22:44.831Z"
+                  }
+              }
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              example:
+              {
+                  "status": "error",
+                  "message": "Post not found"
+              }
+    get:
+      summary: Get comments of a post
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved comments
+          content:
+            application/json:
+              example:
+              {
+                  "status": "success",
+                  "comments": [
+                      {
+                          "id": 6,
+                          "postId": 6,
+                          "userId": 2,
+                          "content": "I love you,Mita!",
+                          "media": "[\"/uploads/1740629193923-c757a1d7761a0212580ca7293a1slx75.jpg\"]",
+                          "createdAt": "2025-02-14T07:34:26.000Z",
+                          "updatedAt": "2025-02-27T04:06:33.000Z",
+                          "UserId": 2,
+                          "PostId": 6
+                      },
+                      {
+                          "id": 106,
+                          "postId": 6,
+                          "userId": 2,
+                          "content": "Convoco apparatus libero ea summa. Crustulum verus",
+                          "media": null,
+                          "createdAt": "2025-02-14T07:34:26.000Z",
+                          "updatedAt": "2025-02-14T07:34:26.000Z",
+                          "UserId": 2,
+                          "PostId": 6
+                      }
+                  ]
+              }
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              example:
+              {
+                  "status": "error",
+                  "message": "Post not found"
+              }
+
+  /posts/{id}/comments/{comment_id}:
+    put:
+      summary: Edit a comment
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: comment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+      responses:
+        "200":
+          description: Successfully updated comment
+          content:
+            application/json:
+              example:
+              {
+                  "status": "success",
+                  "message": "Comment updated",
+                  "content": "I love you,Mita!",
+                  "media": [
+                      "/uploads/1741584817272-c757a1d7761a0212580ca7293a1slx75.jpg"
+                  ]
+              }
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              example:
+              {
+                  "status": "error",
+                  "message": "Comment not found"
+              }
+
+    delete:
+      summary: Delete a comment
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: comment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully deleted comment
+          content:
+            application/json:
+              example:
+              {
+                  "status": "success",
+                  "message": "Comment deleted"
+              }
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              example:
+              {
+                  "status": "error",
+                  "message": "Comment not found"
+              }
+
+  /rooms:
+    get:
+      summary: Get chat rooms of current user
+      tags:
+        - Rooms
+      responses:
+        "200":
+          description: Successfully retrieved chat rooms
+          content:
+            application/json:
+              example:
+                [
+                    {
+                        "userId": 3,
+                        "name": "user2",
+                        "account": "user2",
+                        "profilePic": "/image/profilePic.png",
+                        "roomId": 9,
+                        "message": null,
+                        "createdAt": null
+                    }
+                ]
+        "401":
+          description: Access token is invalid
+
+    post:
+      summary: Create a new chat room
+      tags:
+        - Rooms
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              userId: 3
+      responses:
+        "200":
+          description: Successfully created chat room
+          content:
+            application/json:
+              example:
+                {
+                    "status": "success",
+                    "roomId": 11
+                }
+        "401":
+          description: Access token is invalid
+
+  /rooms/{roomId}:
+    get:
+      summary: Get a single chat room by ID
+      tags:
+        - Rooms
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved chat room data
+          content:
+            application/json:
+              example:
+                {
+                    "onlineUsersCount": 1,
+                    "onlineUsers": [],
+                    "messages": []
+                }
+        "404":
+          description: Chat room not found
+          content:
+            application/json:
+              example:
+                {
+                    "status": "error",
+                    "message": "Chat room not found"
+                }
+
+  /rooms/notifications:
+    get:
+      summary: Get all notifications
+      tags:
+        - Rooms
+      responses:
+        "200":
+          description: Successfully retrieved notifications
+
+        "401": 
+        description: Access token is missing or invalid
+
+  /rooms/private/unread:
+    get:
+      summary: Get count of unread notifications
+      tags:
+        - Rooms
+      responses:
+        "200":
+          description: Successfully retrieved unread notifications count
+
+        "401": 
+        description: Access token is missing or invalid
+
