@@ -7,7 +7,6 @@ const morgan = require('morgan')
 const app = express()
 const routes = require('./route')
 const { socketServer } = require('./utils/socket')
-const swaggerRoutes = require('./routes/swagger')
 require('dotenv').config()
 
 const http = require('http')
@@ -37,7 +36,6 @@ app.use(express.urlencoded({ extended: true }))
 socketServer(server)
 
 app.use(routes)
-app.use('/api-docs', swaggerRoutes)
 
 app.use((error, req, res, next) => {
   res.status(error.status || 500).json({
