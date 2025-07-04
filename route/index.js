@@ -11,7 +11,7 @@ const { authenticated, authenticatedAdmin } = require('../middleware/auth')
 // 總體路由
 router.use('/users', users)
 router.use('/swagger', swagger)
-router.use('/posts', authenticated, posts)
+router.use('/posts', posts)
 router.use('/admin', authenticated, authenticatedAdmin, admins)
 router.use('/rooms', authenticated, rooms)
 

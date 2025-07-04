@@ -12,7 +12,7 @@ const postController = {
         include: [User, Like, Comment],
         order: [['createdAt', 'DESC']]
       })
-      const likes = getUserInfoId(req, 'LikedPosts')
+      const likes = req.user?.LikedPosts ? getUserInfoId(req, 'LikedPosts') : []
 
       const formattedPosts = posts.map(posts => {
         const { id, userId, content, media, createdAt, updatedAt, Comments, Likes, User } = posts
