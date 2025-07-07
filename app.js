@@ -11,7 +11,6 @@ require('dotenv').config()
 
 const http = require('http')
 const server = http.createServer(app)
-const io = require('socket.io')(server)
 const PORT = process.env.PORT || 3000
 
 // Create upload directory if not exists
@@ -44,9 +43,6 @@ app.use((error, req, res, next) => {
   })
 })
 
-io.on('connection', socket => {
-  console.log('New WebSocket connection')
-})
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
 })
